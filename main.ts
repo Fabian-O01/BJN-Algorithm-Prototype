@@ -176,20 +176,32 @@ function computeWinningBudgets(game: Game){
         else{
             // ln 10
             let defenderPost: Position[] = [];
-            let options = new Map<Position, number[]>();
+            let options = new Map<Position, number[][]>();
             // ln 10 and 11
             game.moves.forEach(function(move){
                 if (move.from == g){
                     defenderPost.push(move.to)
-                    // TODO: Fix set with same key override
                     attackerWin.get(move.to)?.forEach(function(energyLevel){
-                        options.set(move.to, inverseUpdate(energyLevel, move.update));
+                        if (!options.has(move.to)){
+                            options.set(move.to, []);
+                        }
+                        options.get(move.to)!.push(inverseUpdate(energyLevel, move.update));
                     })
                 }
             })
             // ln 12
+            // comparing cardinality should also be correct and more efficient
             if (defenderPost.every(function(gdash){ options.has(gdash)})){
-                // TODO: ln 13
+                let optionValues: number[][] = [];
+                for (let option of options.values()){
+                    optionValues.push(...option);
+                }
+                newAttackerWin.push(optionValues.pop() || []);
+                optionValues.forEach(function(energyLevel){
+                    energyLevel.forEach(function(e_i, i){
+                        newAttackerWin[0][i] = Math.max(newAttackerWin[0][i], e_i);
+                    })
+                })
             }
             //ln 16
             // duplicate elements?
