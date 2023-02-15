@@ -30,13 +30,13 @@ class Graph{
     }
 
     addNode(label: string): Node{
-        const node = new Node(label);
+        let node = new Node(label);
         this.nodes.push(node);
         return node;
     }
 
     addEdge(from: Node, to: Node, label: string): Edge{
-        const edge = new Edge(from, to, label);
+        let edge = new Edge(from, to, label);
         from.adj.push(to);
         this.edges.push(edge);
         return edge;
@@ -93,7 +93,20 @@ class Game{
         this.defenderPositions = [];
         this.moves = [];
         this.startPosition = startPosition
+        this.positions.push(startPosition);
         this.startEnergyBudget = startEnergyBudget
+    }
+
+    addPosition(position: Position){
+        this.positions.push(position);
+        if (position.isDefenderPosition){
+            this.defenderPositions.push(position);
+        }
+        return position;
+    }
+
+    addMove(move: Move){
+        this.moves.push(move);
     }
 }
 
@@ -231,7 +244,7 @@ function computeWinningBudgets(game: Game){
 
 
 function main(){
-    //P1
+    // graph from figure 4
     let graph = new Graph();
     let s = graph.addNode("S");
     let sdash = graph.addNode("S'");
@@ -242,7 +255,68 @@ function main(){
     graph.addEdge(sdash, sdash, "tau");
     graph.addEdge(sdash, div, "en");
     graph.addEdge(div, div, "tau");
-    let pos = new Position(s, false, [sdash], undefined, undefined);
+
+    // game graph from Figure 7
+    // positions
+    let game = new Game(new Position(s, false, [sdash], undefined, undefined), Array(6).fill(Infinity));
+    let pos1 = game.addPosition(new Position(div, false, [sdash], undefined, undefined));
+    let pos2 = game.addPosition(new Position(div, true, [sdash], [], undefined));
+    let pos3 = game.addPosition(new Position(div, false, undefined, undefined, sdash));
+    let pos4 = game.addPosition(new Position(sdash, false, [div], undefined, undefined));
+    let pos5 = game.addPosition(new Position(div, false, [], undefined, undefined));
+    let pos6 = game.addPosition(new Position(div, true, [], [], undefined));
+    let pos7 = game.addPosition(new Position(sdash, true, [div], [], undefined));
+    let pos8 = game.addPosition(new Position(sdash, false, undefined, undefined, div));
+    let pos9 = game.addPosition(new Position(sdash, true, [s, div], [], undefined));
+    let pos10 = game.addPosition(new Position(sdash, false, [s, div], undefined, undefined));
+    let pos11 = game.addPosition(new Position(sdash, true, [div], [s], undefined));
+    let pos12 = game.addPosition(new Position(sdash, false, [s], undefined, undefined));
+    // error in paper?
+    let pos13 = game.addPosition(new Position(sdash, true, [s], [], undefined));
+    // error in paper?
+    let pos14 = game.addPosition(new Position(sdash, false, undefined, undefined, s));
+    let pos15 = game.addPosition(new Position(s, false, undefined, undefined, sdash));
+    let pos16 = game.addPosition(new Position(s, true, [sdash], [], undefined));
+    let pos17 = game.addPosition(new Position(div, false, [div], undefined, undefined));
+
+    // updates for moves
+    let observation = [-1,0,0,0,0,0];
+    let challenge = [0,-1,0,0,0,0];
+    let revival = [[1,3],0,0,0,0,0];
+    let answer = [0,0,0,[3,4],0,0];
+    let posDecision = [[1,4],0,0,0,0,0];
+    let negDecision = [[1,5],0,0,0,0,-1];
+
+    // moves
+    game.addMove(new Move(game.startPosition, pos1, observation));
+    game.addMove(new Move(pos1, pos2, challenge));
+    game.addMove(new Move(pos2, pos3, answer));
+    game.addMove(new Move(pos3, pos1, posDecision));
+    game.addMove(new Move(pos3, pos4, negDecision));
+    game.addMove(new Move(pos4, pos5, observation));
+    game.addMove(new Move(pos5, pos6, challenge));
+    game.addMove(new Move(pos4, pos7, challenge));
+    game.addMove(new Move(pos7, pos8, answer));
+    game.addMove(new Move(pos8, pos4, posDecision));
+    game.addMove(new Move(pos8, pos1, negDecision));
+    game.addMove(new Move(game.startPosition, pos16, challenge));
+    game.addMove(new Move(pos16, pos15, answer));
+    game.addMove(new Move(pos15, game.startPosition, posDecision));
+    game.addMove(new Move(pos15, pos12, negDecision));
+    game.addMove(new Move(pos12, pos17, observation));
+    game.addMove(new Move(pos12, pos13, challenge));
+    game.addMove(new Move(pos13, pos14, answer));
+    game.addMove(new Move(pos14, game.startPosition, negDecision));
+    game.addMove(new Move(pos12, pos10, observation));
+    game.addMove(new Move(pos10, pos17, observation));
+    game.addMove(new Move(pos10, pos11, challenge));
+    game.addMove(new Move(pos11, pos12, revival));
+    game.addMove(new Move(pos11, pos8, answer));
+    game.addMove(new Move(pos10, pos9, challenge));
+    game.addMove(new Move(pos9, pos14, answer));
+    game.addMove(new Move(pos9, pos8, answer));
+    game.addMove(new Move(game.startPosition, pos17, observation));
+    game.addMove(new Move(pos14, pos12, posDecision));
 }
 
 main();
