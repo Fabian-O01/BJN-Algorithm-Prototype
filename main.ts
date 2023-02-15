@@ -137,11 +137,11 @@ function inverseUpdate(energyLevel: number[], update: (number | number[])[]){
 
 
 function computeMinimumBudgets(newAttackerWin: number[][] , budgets: number[][]){
-    newAttackerWin.push(budgets[0]);
+    newAttackerWin.push(budgets.pop()!);
     budgets.forEach(function(budget){
         newAttackerWin.forEach(function(minBudget){
-            if (budget.every(function(e_n, i){e_n >= minBudget[i]})) {return;}
-            if (budget.every(function(e_n, i){e_n <= minBudget[i]})){
+            if (budget.every(function(e_n, i){return e_n >= minBudget[i]})) {return;}
+            if (budget.every(function(e_n, i){return e_n <= minBudget[i]})){
                 newAttackerWin.splice(newAttackerWin.indexOf(minBudget), 1);
                 newAttackerWin.push(budget);
                 return;
@@ -163,6 +163,7 @@ function computeWinningBudgets(game: Game){
     game.defenderPositions.forEach(function(pos){
         if(pos.defenderStuck()){
             todo.push(pos);
+            attackerWin.set(pos, [Array(6).fill(0)]);
         }
     })
 
@@ -174,8 +175,7 @@ function computeWinningBudgets(game: Game){
         // ln 7
         if (!g!.isDefenderPosition){
             // ln 8
-            //let newAttackerWin: number[][] = []
-            let minToFind: number[][] = attackerWin.get(g!) || [];
+            let minToFind: number[][] = attackerWin.get(g!)!;
             game.moves.forEach(function(move){
                 if (move.from == g){
                     attackerWin.get(move.to)?.forEach(function(edash){
@@ -187,6 +187,14 @@ function computeWinningBudgets(game: Game){
         }
         // ln 9
         else{
+            if (g!.defenderStuck()){
+                game.moves.forEach(function(move){
+                    if (move.to == g){
+                        todo.push(move.from);
+                    }
+                })
+                continue;
+            }
             // ln 10
             let defenderPost: Position[] = [];
             let options = new Map<Position, number[][]>();
@@ -194,7 +202,7 @@ function computeWinningBudgets(game: Game){
             game.moves.forEach(function(move){
                 if (move.from == g){
                     defenderPost.push(move.to)
-                    attackerWin.get(move.to)?.forEach(function(energyLevel){
+                    attackerWin.get(move.to)!.forEach(function(energyLevel){
                         if (!options.has(move.to)){
                             options.set(move.to, []);
                         }
@@ -204,38 +212,42 @@ function computeWinningBudgets(game: Game){
             })
             // ln 12
             // comparing cardinality should also be correct and more efficient
-            if (defenderPost.every(function(gdash){ options.has(gdash)})){
+            if (defenderPost.every(function(gdash){ return options.has(gdash)})){
                 let optionValues: number[][] = [];
                 for (let option of options.values()){
                     optionValues.push(...option);
                 }
-                newAttackerWin.push(optionValues.pop() || []);
+                // ln 13
+                let firstValue = optionValues.pop();
+                if (firstValue){
+                    newAttackerWin.push(firstValue);
+                }
                 optionValues.forEach(function(energyLevel){
                     energyLevel.forEach(function(e_i, i){
                         newAttackerWin[0][i] = Math.max(newAttackerWin[0][i], e_i);
                     })
                 })
             }
-            //ln 16
-            // duplicate elements?
-            if (!(newAttackerWin.length == attackerWin.get(g!)?.length &&
-                newAttackerWin.every(function(energyLevel){
-                    attackerWin.get(g!)?.some(function(otherEnergylevel){
-                        energyLevel.every(function(e_i, i){
-                            e_i == otherEnergylevel[i]
-                        })
+        }
+        //ln 16
+        // duplicate elements shouldn't exist
+        if (!(newAttackerWin.length == attackerWin.get(g!)?.length &&
+            newAttackerWin.every(function(energyLevel){
+                return attackerWin.get(g!)?.some(function(otherEnergylevel){
+                    return energyLevel.every(function(e_i, i){
+                        return e_i == otherEnergylevel[i]
                     })
                 })
-            )) {
-                // ln 17
-                attackerWin.set(g!, newAttackerWin);
-                // ln 18
-                game.moves.forEach(function(move){
-                    if (move.to == g){
-                        todo.push(move.from);
-                    }
-                })
-            }
+            })
+        )) {
+            // ln 17
+            attackerWin.set(g!, newAttackerWin);
+            // ln 18
+            game.moves.forEach(function(move){
+                if (move.to == g){
+                    todo.push(move.from);
+                }
+            })
         }
     }
     // ln 19 and 20
@@ -317,6 +329,8 @@ function main(){
     game.addMove(new Move(pos9, pos8, answer));
     game.addMove(new Move(game.startPosition, pos17, observation));
     game.addMove(new Move(pos14, pos12, posDecision));
+
+    computeWinningBudgets(game)
 }
 
 main();
