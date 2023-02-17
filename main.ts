@@ -170,12 +170,12 @@ function computeWinningBudgets(game: Game){
     // ln 4
     while (todo.length > 0){
         //ln 5 and 6
-        let g = todo.pop();
-        let newAttackerWin: number[][] = []
+        let g = todo.pop()!;
+        let newAttackerWin: number[][] = [];
         // ln 7
-        if (!g!.isDefenderPosition){
+        if (!g.isDefenderPosition){
             // ln 8
-            let minToFind: number[][] = attackerWin.get(g!)!;
+            let minToFind: number[][] = [...attackerWin.get(g)!];
             game.moves.forEach(function(move){
                 if (move.from == g){
                     attackerWin.get(move.to)?.forEach(function(edash){
@@ -187,7 +187,7 @@ function computeWinningBudgets(game: Game){
         }
         // ln 9
         else{
-            if (g!.defenderStuck()){
+            if (g.defenderStuck()){
                 game.moves.forEach(function(move){
                     if (move.to == g){
                         todo.push(move.from);
@@ -213,6 +213,7 @@ function computeWinningBudgets(game: Game){
             // ln 12
             // comparing cardinality should also be correct and more efficient
             if (defenderPost.every(function(gdash){ return options.has(gdash)})){
+                // ln 13
                 let optionsArray: number[][][] = [];
                 for (let strats of options.values()){
                     optionsArray.push(strats);
@@ -244,9 +245,9 @@ function computeWinningBudgets(game: Game){
         }
         //ln 16
         // duplicate elements shouldn't exist
-        if (!(newAttackerWin.length == attackerWin.get(g!)?.length &&
+        if (!(newAttackerWin.length == attackerWin.get(g)?.length &&
             newAttackerWin.every(function(energyLevel){
-                return attackerWin.get(g!)?.some(function(otherEnergylevel){
+                return attackerWin.get(g)?.some(function(otherEnergylevel){
                     return energyLevel.every(function(e_i, i){
                         return e_i == otherEnergylevel[i]
                     })
@@ -254,7 +255,7 @@ function computeWinningBudgets(game: Game){
             })
         )) {
             // ln 17
-            attackerWin.set(g!, newAttackerWin);
+            attackerWin.set(g, newAttackerWin);
             // ln 18
             game.moves.forEach(function(move){
                 if (move.to == g){
