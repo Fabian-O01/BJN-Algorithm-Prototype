@@ -126,7 +126,7 @@ function inverseUpdate(energyLevel: number[], update: (number | number[])[]){
             parts.push(part);
         }
     })
-    let sup = parts.pop() || [];
+    let sup = parts.pop()!;
     parts.forEach(function(part){
         part.forEach(function(e_i, i){
             sup[i] = Math.max(sup[i], e_i);
@@ -213,20 +213,33 @@ function computeWinningBudgets(game: Game){
             // ln 12
             // comparing cardinality should also be correct and more efficient
             if (defenderPost.every(function(gdash){ return options.has(gdash)})){
-                let optionValues: number[][] = [];
-                for (let option of options.values()){
-                    optionValues.push(...option);
+                let optionsArray: number[][][] = [];
+                for (let strats of options.values()){
+                    optionsArray.push(strats);
                 }
-                // ln 13
-                let firstValue = optionValues.pop();
-                if (firstValue){
-                    newAttackerWin.push(firstValue);
+                let minToFind: number[][] = []
+                if (optionsArray.length == 1){
+                    minToFind.push(...optionsArray[0]);
                 }
-                optionValues.forEach(function(energyLevel){
-                    energyLevel.forEach(function(e_i, i){
-                        newAttackerWin[0][i] = Math.max(newAttackerWin[0][i], e_i);
+                optionsArray.forEach((gdashValues) => {
+                    optionsArray.forEach((otherGdashValues) => {
+                        if (gdashValues == otherGdashValues){
+                            return;
+                        }
+            	        else{
+                            gdashValues.forEach((energyLevel) =>{
+                                otherGdashValues.forEach((otherEnergyLevel) => {
+                                    let sup: number[] = [];
+                                    for (let k = 0; k<6; k++){
+                                        sup[k] = Math.max(energyLevel[k], otherEnergyLevel[k]);
+                                    }
+                                    minToFind.push(sup);
+                                })
+                            })
+                        }
                     })
                 })
+                computeMinimumBudgets(newAttackerWin, minToFind);
             }
         }
         //ln 16
