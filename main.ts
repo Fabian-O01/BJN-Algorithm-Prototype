@@ -63,7 +63,7 @@ class Position{
         if(!this.isDefenderPosition) {
             throw new Error("Not a defender position.");
         }
-        return (this.qSet?.length == 0 && this.qStarSet?.length == 0 ? true : false)
+        return (this.qSet?.length == 0 && this.qStarSet?.length == 0)
     }
 }
 
@@ -113,12 +113,12 @@ class Game{
 
 function inverseUpdate(energyLevel: number[], update: (number | number[])[]){
     let parts: number[][] = [[...energyLevel]];
-    update.forEach(function(u_i, i){
+    update.forEach((u_i, i) => {
         //relative updates
         if (typeof(u_i) == "number"){
             parts[0][i] -= u_i;
         }
-        // minimum selection updates (index starts a one)
+        // minimum selection updates (index starts at one)
         else{
             let part = Array(6).fill(0);
             part[u_i[0]-1] = energyLevel[i];
@@ -127,8 +127,8 @@ function inverseUpdate(energyLevel: number[], update: (number | number[])[]){
         }
     })
     let sup = parts.pop()!;
-    parts.forEach(function(part){
-        part.forEach(function(e_i, i){
+    parts.forEach((part) => {
+        part.forEach((e_i, i) => {
             sup[i] = Math.max(sup[i], e_i);
         })
     })
@@ -138,16 +138,32 @@ function inverseUpdate(energyLevel: number[], update: (number | number[])[]){
 
 function computeMinimumBudgets(newAttackerWin: number[][] , budgets: number[][]){
     newAttackerWin.push(budgets.pop()!);
-    budgets.forEach(function(budget){
-        newAttackerWin.forEach(function(minBudget){
-            if (budget.every(function(e_n, i){return e_n >= minBudget[i]})) {return;}
-            if (budget.every(function(e_n, i){return e_n <= minBudget[i]})){
-                newAttackerWin.splice(newAttackerWin.indexOf(minBudget), 1);
-                newAttackerWin.push(budget);
-                return;
+    budgets.forEach((budget) => {
+        // flag to prohibit budgets being pushed multiple times
+        let pushed: boolean = false;
+        // another flag to check for dominance
+        let dominated: boolean = false;
+        for (let minBudget of newAttackerWin){
+            // budget is dominated by minbudget
+            if (budget.every((e_n, i) => {return e_n >= minBudget[i]})) {
+                dominated = true;
+                break;
             }
+            // budget dominates minbudget
+            else{
+                if (budget.every((e_n, i) => {return e_n <= minBudget[i]})){
+                    newAttackerWin.splice(newAttackerWin.indexOf(minBudget), 1);
+                    if (!pushed){
+                        newAttackerWin.push(budget);
+                        pushed = true;
+                    }
+                }
+            }
+        }
+        // budget is not comparable to any minbudget in newAttackerWin
+        if (!(dominated || pushed)){
             newAttackerWin.push(budget);
-        })
+        }
     });
 }
 
@@ -155,12 +171,12 @@ function computeMinimumBudgets(newAttackerWin: number[][] , budgets: number[][])
 function computeWinningBudgets(game: Game){
     // ln 2
     let attackerWin = new Map<Position, number[][]>();
-    game.positions.forEach(function(pos){
+    game.positions.forEach((pos) => {
         attackerWin.set(pos, []);
     })
     // ln 3
     let todo: Position[] = [];
-    game.defenderPositions.forEach(function(pos){
+    game.defenderPositions.forEach((pos) => {
         if(pos.defenderStuck()){
             todo.push(pos);
             attackerWin.set(pos, [Array(6).fill(0)]);
@@ -176,9 +192,9 @@ function computeWinningBudgets(game: Game){
         if (!g.isDefenderPosition){
             // ln 8
             let minToFind: number[][] = [...attackerWin.get(g)!];
-            game.moves.forEach(function(move){
+            game.moves.forEach((move) => {
                 if (move.from == g){
-                    attackerWin.get(move.to)?.forEach(function(edash){
+                    attackerWin.get(move.to)?.forEach((edash) => {
                         minToFind.push(inverseUpdate(edash, move.update));
                     })
                 }
@@ -188,7 +204,7 @@ function computeWinningBudgets(game: Game){
         // ln 9
         else{
             if (g.defenderStuck()){
-                game.moves.forEach(function(move){
+                game.moves.forEach((move) => {
                     if (move.to == g){
                         todo.push(move.from);
                     }
@@ -199,10 +215,10 @@ function computeWinningBudgets(game: Game){
             let defenderPost: Position[] = [];
             let options = new Map<Position, number[][]>();
             // ln 10 and 11
-            game.moves.forEach(function(move){
+            game.moves.forEach((move) => {
                 if (move.from == g){
                     defenderPost.push(move.to)
-                    attackerWin.get(move.to)!.forEach(function(energyLevel){
+                    attackerWin.get(move.to)!.forEach((energyLevel) => {
                         if (!options.has(move.to)){
                             options.set(move.to, []);
                         }
@@ -212,7 +228,7 @@ function computeWinningBudgets(game: Game){
             })
             // ln 12
             // comparing cardinality should also be correct and more efficient
-            if (defenderPost.every(function(gdash){ return options.has(gdash)})){
+            if (defenderPost.every((gdash) => { return options.has(gdash)})){
                 // ln 13
                 let optionsArray: number[][][] = [];
                 for (let strats of options.values()){
@@ -246,9 +262,9 @@ function computeWinningBudgets(game: Game){
         //ln 16
         // duplicate elements shouldn't exist
         if (!(newAttackerWin.length == attackerWin.get(g)?.length &&
-            newAttackerWin.every(function(energyLevel){
-                return attackerWin.get(g)?.some(function(otherEnergylevel){
-                    return energyLevel.every(function(e_i, i){
+            newAttackerWin.every((energyLevel) => {
+                return attackerWin.get(g)?.some((otherEnergylevel) => {
+                    return energyLevel.every((e_i, i) => {
                         return e_i == otherEnergylevel[i]
                     })
                 })
@@ -257,7 +273,7 @@ function computeWinningBudgets(game: Game){
             // ln 17
             attackerWin.set(g, newAttackerWin);
             // ln 18
-            game.moves.forEach(function(move){
+            game.moves.forEach((move) => {
                 if (move.to == g){
                     todo.push(move.from);
                 }
