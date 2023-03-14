@@ -65,6 +65,51 @@ class Position{
         }
         return (this.qSet?.length == 0 && this.qStarSet?.length == 0)
     }
+
+    isEqualTo(otherPos: Position){
+        // check for equality of p
+        if (!(this.p.label === otherPos.p.label)){ return false; }
+
+        // check for set equality of qSet
+        if ((this.qSet && otherPos.qSet)){
+            if (!(this.qSet.every((q) => {
+                return otherPos.qSet!.some((otherq) => { return q.label === otherq.label })
+            })
+            && otherPos.qSet.every((otherq) => {
+                return this.qSet!.some((q) => { return otherq.label === q.label })
+            }))){
+                return false;
+            }
+        }
+        else{
+            if (this.qSet || otherPos.qSet){ return false; }
+        }
+
+        // check for set equality of qStarSet
+        if ((this.qStarSet && otherPos.qStarSet)){
+            if (!(this.qStarSet.every((q) => {
+                return otherPos.qStarSet!.some((otherq) => { return q.label === otherq.label })
+            })
+            && otherPos.qStarSet.every((otherq) => {
+                return this.qStarSet!.some((q) => { return otherq.label === q.label })
+            }))){
+                return false;
+            }
+        }
+        else{
+            if (this.qStarSet || otherPos.qStarSet){ return false; }
+        }
+
+        // check for equality of q
+        if (this.q && otherPos.q){
+            if (!(this.q.label === otherPos.q.label)) { return false; }
+        }
+        else{
+            if (this.q || otherPos.q) { return false; }
+        }
+
+        return true;
+    }
 }
 
 
@@ -80,21 +125,39 @@ class Move{
     }
 }
 
+function findTwoPartitions(set: Node[]){
+    let combinations: Node[][] = [[]];
+    for(let i = 0; i < Math.pow(2, set.length); i++){
+        let combination = [];
+        for(let j = 0; j < set.length; j++){
+            if ((i & Math.pow(2,j))){
+                combination.push(set[j]);
+            }
+        }
+        if (combination.length != 0){
+            combinations.push(combination);
+        }
+    }
+    return combinations;
+}
+
+function getSetDifference(set: Node[], subset: Node[]){
+    return set.filter((elem) => {
+        subset.every((e) => { return elem != e; })
+    })
+}
+
 
 class Game{
     positions: Position[];
     defenderPositions: Position[];
     moves: Move[];
-    startPosition: Position;
-    startEnergyBudget: number[];
 
-    constructor(startPosition: Position, startEnergyBudget: number[]) {
+    constructor(g: Graph, firstNode: Node, secondNode: Node) {
         this.positions = [];
         this.defenderPositions = [];
         this.moves = [];
-        this.startPosition = startPosition
-        this.positions.push(startPosition);
-        this.startEnergyBudget = startEnergyBudget
+        this.createGameGraph(g, firstNode, secondNode);
     }
 
     addPosition(position: Position){
@@ -107,6 +170,126 @@ class Game{
 
     addMove(move: Move){
         this.moves.push(move);
+    }
+
+    createGameGraph(g: Graph, firstNode: Node, secondNode: Node){
+        // initialize stack with start position
+        let todo: Position[] = [new Position(firstNode, false, [secondNode], undefined, undefined)];
+        while (todo.length > 0){
+            let pos = todo.pop()!;
+            if (pos.isDefenderPosition){
+                // conjunctive revival
+                if (pos.qStarSet!.length > 0){
+                    let newPos: Position = new Position(pos.p, false, pos.qStarSet, undefined, undefined);
+                    // check if newPos was already discovered to avoid duplicates
+                    if (!this.positions.some((existingPos) => { return existingPos.isEqualTo(newPos) })){
+                        this.addPosition(newPos);
+                        this.addMove(new Move(pos, newPos, [[1,3],0,0,0,0,0]));
+                        todo.push(newPos);
+                    }
+                    else{
+                        let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                        if (!destPos){ throw new Error("Position does not exist despite check"); }
+                        this.addMove(new Move(pos, destPos, [[1,3],0,0,0,0,0]))
+                    }
+                }
+                // conjunctive answers
+                pos.qSet!.forEach((q) => {
+                    let newPos: Position = new Position(pos.p, false, undefined, undefined, q);
+                    // check if newPos was already discovered to avoid duplicates
+                    if (!this.positions.some((existingPos) => { return existingPos.isEqualTo(newPos) })){
+                        this.addPosition(newPos);
+                        this.addMove(new Move(pos, newPos, [0,0,0,[3,4],0,0]));
+                        todo.push(newPos);
+                    }
+                    else{
+                        let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                        if (!destPos){ throw new Error("Position does not exist despite check"); }
+                        this.addMove(new Move(pos, destPos, [0,0,0,[3,4],0,0]))
+                    }
+                })
+            }
+            else{
+                // attacker clause positions
+                if (pos.q){
+                    // positive decisions
+                    let newPos: Position = new Position(pos.p, false, [pos.q], undefined, undefined);
+                    // check if newPos was already discovered to avoid duplicates
+                    if (!this.positions.some((existingPos) => { return existingPos.isEqualTo(newPos) })){
+                        this.addPosition(newPos);
+                        this.addMove(new Move(pos, newPos, [[1,4],0,0,0,0,0]));
+                        todo.push(newPos);
+                    }
+                    else{
+                        let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                        if (!destPos){ throw new Error("Position does not exist despite check"); }
+                        this.addMove(new Move(pos, destPos, [[1,4],0,0,0,0,0]))
+                    }
+                    // negative decisions
+                    if (pos.p.label != pos.q.label){
+                        let newPos: Position = new Position(pos.q, false, [pos.p], undefined, undefined);
+                        // check if newPos was already discovered to avoid duplicates
+                        if (!this.positions.some((existingPos) => { return existingPos.isEqualTo(newPos) })){
+                            this.addPosition(newPos);
+                            this.addMove(new Move(pos, newPos, [[1,5],0,0,0,0,-1]));
+                            todo.push(newPos);
+                        }
+                        else{
+                            let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                            if (!destPos){ throw new Error("Position does not exist despite check"); }
+                            this.addMove(new Move(pos, destPos, [[1,5],0,0,0,0,-1]))
+                        }
+                    }
+                }
+                else{
+                    // observation moves
+                    g.edges.forEach((edge) => {
+                        if (edge.from.label === pos.p.label){
+                            let newQSet: Node[] = [];
+                            g.edges.forEach((e) => {
+                                if (e.label === edge.label){
+                                    pos.qSet!.forEach((q) => {
+                                        if (e.from.label === q.label){
+                                            // duplicates?
+                                            newQSet.push(e.to);
+                                        }
+                                    })
+                                }
+                            })
+                            let newPos: Position = new Position(edge.to, false, newQSet, undefined, undefined);
+                            // check if newPos was already discovered to avoid duplicates
+                            if (!this.positions.some((existingPos) => { return existingPos.isEqualTo(newPos) })){
+                                this.addPosition(newPos);
+                                this.addMove(new Move(pos, newPos, [-1,0,0,0,0,0]));
+                                todo.push(newPos);
+                            }
+                            else{
+                                let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                                if (!destPos){ throw new Error("Position does not exist despite check"); }
+                                this.addMove(new Move(pos, destPos, [-1,0,0,0,0,0]))
+                            }
+                        }
+                    })
+
+                    // conjunctional challenges
+                    let twoPartitions: Node[][] = findTwoPartitions(pos.qSet!)
+                    twoPartitions.forEach((partition) => {
+                        let newPos: Position = new Position(pos.p, true, partition, getSetDifference(pos.qSet!, partition), undefined);
+                        // check if newPos was already discovered to avoid duplicates
+                        if (!this.positions.some((existingPos) => { return existingPos.isEqualTo(newPos) })){
+                            this.addPosition(newPos);
+                            this.addMove(new Move(pos, newPos, [0,-1,0,0,0,0]));
+                            todo.push(newPos);
+                        }
+                        else{
+                            let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                            if (!destPos){ throw new Error("Position does not exist despite check"); }
+                            this.addMove(new Move(pos, destPos, [0,-1,0,0,0,0]))
+                        }
+                    })
+                }
+            }
+        }
     }
 }
 
@@ -300,7 +483,7 @@ function main(){
 
     // game graph from Figure 7
     // positions
-    let game = new Game(new Position(s, false, [sdash], undefined, undefined), Array(6).fill(Infinity));
+    /* let game = new Game(new Position(s, false, [sdash], undefined, undefined), Array(6).fill(Infinity));
     let pos1 = game.addPosition(new Position(div, false, [sdash], undefined, undefined));
     let pos2 = game.addPosition(new Position(div, true, [sdash], [], undefined));
     let pos3 = game.addPosition(new Position(div, false, undefined, undefined, sdash));
@@ -313,9 +496,7 @@ function main(){
     let pos10 = game.addPosition(new Position(sdash, false, [s, div], undefined, undefined));
     let pos11 = game.addPosition(new Position(sdash, true, [div], [s], undefined));
     let pos12 = game.addPosition(new Position(sdash, false, [s], undefined, undefined));
-    // error in paper?
     let pos13 = game.addPosition(new Position(sdash, true, [s], [], undefined));
-    // error in paper?
     let pos14 = game.addPosition(new Position(sdash, false, undefined, undefined, s));
     let pos15 = game.addPosition(new Position(s, false, undefined, undefined, sdash));
     let pos16 = game.addPosition(new Position(s, true, [sdash], [], undefined));
@@ -358,9 +539,9 @@ function main(){
     game.addMove(new Move(pos9, pos14, answer));
     game.addMove(new Move(pos9, pos8, answer));
     game.addMove(new Move(game.startPosition, pos17, observation));
-    game.addMove(new Move(pos14, pos12, posDecision));
+    game.addMove(new Move(pos14, pos12, posDecision)); */
 
-    computeWinningBudgets(game)
+    computeWinningBudgets(new Game(graph, s, sdash));
 }
 
 main();
