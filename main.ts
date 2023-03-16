@@ -1,3 +1,13 @@
+let counter = 0;
+
+class WithAutoIncrementedId{
+    id: Number;
+
+    constructor(){
+        this.id = counter++;
+    }
+}
+
 class Node{
     label: string;
     adj: Node[];
@@ -44,7 +54,7 @@ class Graph{
 }
 
 
-class Position{
+class Position extends WithAutoIncrementedId{
     p: Node;
     qSet?: Node[]
     qStarSet?: Node[]
@@ -52,6 +62,8 @@ class Position{
     isDefenderPosition: boolean
 
     constructor(p:Node, isDefenderPosition: boolean, qSet?:Node[], qStarSet?:Node[], q?:Node){
+        // assign index
+        super();
         this.p = p;
         this.qSet = qSet || undefined;
         this.qStarSet = qStarSet || undefined;
@@ -142,8 +154,11 @@ function findTwoPartitions(set: Node[]){
 }
 
 function getSetDifference(set: Node[], subset: Node[]){
+    if (subset.length == 0){
+        return set;
+    }
     return set.filter((elem) => {
-        subset.every((e) => { return elem != e; })
+        return subset.every((e) => { return elem != e; })
     })
 }
 
@@ -174,7 +189,9 @@ class Game{
 
     createGameGraph(g: Graph, firstNode: Node, secondNode: Node){
         // initialize stack with start position
-        let todo: Position[] = [new Position(firstNode, false, [secondNode], undefined, undefined)];
+        let startPosition = new Position(firstNode, false, [secondNode], undefined, undefined);
+        this.addPosition(startPosition);
+        let todo: Position[] = [startPosition];
         while (todo.length > 0){
             let pos = todo.pop()!;
             if (pos.isDefenderPosition){
