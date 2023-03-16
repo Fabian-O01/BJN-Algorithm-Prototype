@@ -188,7 +188,7 @@ class Game{
                         todo.push(newPos);
                     }
                     else{
-                        let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                        let destPos = this.positions.find((existingPos) => { return existingPos.isEqualTo(newPos)} )
                         if (!destPos){ throw new Error("Position does not exist despite check"); }
                         this.addMove(new Move(pos, destPos, [[1,3],0,0,0,0,0]))
                     }
@@ -203,7 +203,7 @@ class Game{
                         todo.push(newPos);
                     }
                     else{
-                        let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                        let destPos = this.positions.find((existingPos) => { return existingPos.isEqualTo(newPos) })
                         if (!destPos){ throw new Error("Position does not exist despite check"); }
                         this.addMove(new Move(pos, destPos, [0,0,0,[3,4],0,0]))
                     }
@@ -221,7 +221,7 @@ class Game{
                         todo.push(newPos);
                     }
                     else{
-                        let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                        let destPos = this.positions.find((existingPos) => { return existingPos.isEqualTo(newPos) })
                         if (!destPos){ throw new Error("Position does not exist despite check"); }
                         this.addMove(new Move(pos, destPos, [[1,4],0,0,0,0,0]))
                     }
@@ -235,7 +235,7 @@ class Game{
                             todo.push(newPos);
                         }
                         else{
-                            let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                            let destPos = this.positions.find((existingPos) => { return existingPos.isEqualTo(newPos) })
                             if (!destPos){ throw new Error("Position does not exist despite check"); }
                             this.addMove(new Move(pos, destPos, [[1,5],0,0,0,0,-1]))
                         }
@@ -264,7 +264,7 @@ class Game{
                                 todo.push(newPos);
                             }
                             else{
-                                let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                                let destPos = this.positions.find((existingPos) => { return existingPos.isEqualTo(newPos) })
                                 if (!destPos){ throw new Error("Position does not exist despite check"); }
                                 this.addMove(new Move(pos, destPos, [-1,0,0,0,0,0]))
                             }
@@ -282,7 +282,7 @@ class Game{
                             todo.push(newPos);
                         }
                         else{
-                            let destPos = this.positions.find((existingPos) => {existingPos.isEqualTo(newPos)})
+                            let destPos = this.positions.find((existingPos) => { return existingPos.isEqualTo(newPos) })
                             if (!destPos){ throw new Error("Position does not exist despite check"); }
                             this.addMove(new Move(pos, destPos, [0,-1,0,0,0,0]))
                         }
