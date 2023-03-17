@@ -485,6 +485,71 @@ function computeWinningBudgets(game: Game){
 }
 
 
+function getEqualitiesFromEnergies(energyLevels: number[][]){
+    let equalities: String[] = [];
+    // if there exists no distinguishing HML-formula, bisimulation applies
+    if (!energyLevels[0]){
+        equalities.push("bisimulation");
+    }
+    // if for all minimum energy budgets at least one dimension of each is greater than the "allowed" budget to refute, the equivalence applies
+    else{
+        if (energyLevels.every((energyLevel) => { return energyLevel[5] > 1})){
+            equalities.push("2-nested simulation");
+        }
+        else{
+            if (energyLevels.every((energyLevel) => { return energyLevel[4] > 1 || energyLevel[5] > 1})){
+                equalities.push("ready simulation");
+            }
+            else{
+                if (energyLevels.every((energyLevel) => { return energyLevel[4] > 0 || energyLevel[5] > 0})){
+                    equalities.push("simulation");
+                }
+                else{
+                    if (energyLevels.every((energyLevel) => { return energyLevel[1] > 1 || energyLevel[2] > 0 || energyLevel[3] > 0 || energyLevel[4] > 0 || energyLevel[5] > 0})){
+                        equalities.push("traces");
+                    }
+                    else{
+                        if (energyLevels.every((energyLevel) => { return energyLevel[0] > 1 || energyLevel[1] > 1 || energyLevel[2] > 0 || energyLevel[3] > 0 || energyLevel[4] > 0 || energyLevel[5] > 0})){
+                            equalities.push("enabledness");
+                        }
+                    }
+                }
+                if (energyLevels.every((energyLevel) => { return energyLevel[3] > 1 || energyLevel[4] > 1 || energyLevel[5] > 1})){
+                    equalities.push("readiness traces");
+                }
+                else{
+                    if (energyLevels.every((energyLevel) => { return energyLevel[3] > 0 || energyLevel[4] > 1 || energyLevel[5] > 1})){
+                        equalities.push("failure trace");
+                    }
+                }
+            }
+            if (energyLevels.every((energyLevel) => { return energyLevel[1] > 2 || energyLevel[5] > 1})){
+                equalities.push("possible futures");
+            }
+            else{
+                if (energyLevels.every((energyLevel) => { return energyLevel[1] > 2 || energyLevel[2] > 0 || energyLevel[3] > 0 || energyLevel[5] > 1})){
+                    equalities.push("impossible futures");
+                }
+                else{
+                    if (energyLevels.every((energyLevel) => { return energyLevel[1] > 2 || energyLevel[2] > 0 || energyLevel[3] > 0 || energyLevel[4] > 1 || energyLevel[5] > 1})){
+                        equalities.push("failures");
+                    }
+                }
+                if (energyLevels.every((energyLevel) => { return energyLevel[1] > 2 || energyLevel[2] > 1 || energyLevel[3] > 1 || energyLevel[4] > 1 || energyLevel[5] > 1})){
+                    equalities.push("readiness");
+                }
+                else{
+                    if (energyLevels.every((energyLevel) => { return energyLevel[1] > 2 || energyLevel[2] > 1 || energyLevel[3] > 0 || energyLevel[4] > 1 || energyLevel[5] > 1})){
+                        equalities.push("revivals");
+                    }
+                }
+            }
+        }
+    }
+    return equalities;
+}
+
+
 function main(){
     // graph from figure 4
     let graph = new Graph();
@@ -558,7 +623,9 @@ function main(){
     game.addMove(new Move(game.startPosition, pos17, observation));
     game.addMove(new Move(pos14, pos12, posDecision)); */
 
-    computeWinningBudgets(new Game(graph, s, sdash));
+    let winningBudget = computeWinningBudgets(new Game(graph, s, sdash)).entries().next().value[1];
+    console.log(winningBudget, getEqualitiesFromEnergies(winningBudget));
+    
 }
 
 main();
